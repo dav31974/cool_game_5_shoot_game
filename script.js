@@ -2,3 +2,49 @@ const canvas = document.getElementById('canvas1');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+
+let timeToNextRaven = 0;
+let ravenInterval = 600;
+let lastTime = 0;
+
+let ravens = [];
+class Raven {
+    constructor() {
+        this.width = 100;
+        this.height = 50;
+        this.x = canvas.width;
+        this.y = Math.random() * (canvas.height - this.height);
+        this.directionX = Math.random() * 5 + 3; // random number between 3 and 8
+        this.directionY = Math.random() * 5 - 2.5; // random number between -2.5 and +2.5
+        this.markedForDeletion = false;
+    }
+    update() {
+        this.x -= this.directionX;
+        if (this.x < 0 - this.width) {
+            this.markedForDeletion = true;
+        }
+    }
+    draw() {
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+}
+
+let raven = new Raven();
+
+function animate(timestamp) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let deltatime = timestamp - lastTime;
+    lastTime = timestamp;
+    timeToNextRaven += deltatime;
+    if (timeToNextRaven > ravenInterval) {
+        ravens.push(new Raven());
+        timeToNextRaven = 0;
+        // console.log(ravens);
+    };
+    [...ravens].forEach(object => object.update());
+    [...ravens].forEach(object => object.draw());
+    ravens = ravens.filter(object => !object.markedForDeletion); // vide le tableau ravens
+    requestAnimationFrame(animate);
+}
+
+animate(0);  // parametre innitial (timestamp) à 0 sinon sa premiere valeur est undefined 
