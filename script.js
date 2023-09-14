@@ -3,6 +3,16 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+const collisionCanvas = document.getElementById('collisionCanvas');
+const collisionCtx = collisionCanvas.getContext('2d');
+collisionCanvas.width = window.innerWidth;
+collisionCanvas.height = window.innerHeight;
+
+
+let score = 0;
+let life = 5;
+ctx.font = '40px Impact';
+
 let timeToNextRaven = 0;
 let ravenInterval = 600;
 let lastTime = 0;
@@ -26,6 +36,8 @@ class Raven {
         this.maxFrame = 4;
         this.timeSinceFlap = 0;
         this.flapInterval = Math.random() * 50 + 50;
+        this.randomColors = [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)];
+        this.color = 'rgb(' + this.randomColors[0] + ',' + this.randomColors[1] + ',' + this.randomColors[2] + ')';
     }
     update(deltatime) {
         // condition pour que le cobac rebondisse si il touche le haut ou le bas de la fenetre
@@ -43,23 +55,49 @@ class Raven {
         }
     }
     draw() {
-        ctx.strokeRect(this.x, this.y, this.width, this.height);
+        collisionCtx.fillStyle = this.color;
+        collisionCtx.fillRect(this.x, this.y, this.width, this.height);
         ctx.drawImage(this.image, this.frame * this.spriteWidth, 0, this.spriteWidth, this.spriteHeight, this.x, this.y, this.width, this.height);
     }
 }
 
-let raven = new Raven();
+// gestion du shoot --------------------------------------
+// Affichage du score
+function drawScore() {
+    ctx.fillStyle = 'black';
+    ctx.fillText('Score: ' + score, 50, 70);
+    ctx.fillStyle = 'white';
+    ctx.fillText('Score: ' + score, 54, 74);
+}
+
+window.addEventListener('click', function (e) {
+    const detectPixelColor = collisionCtx.getImageData(e.x, e.y, 1, 1);
+    const pc = detectPixelColor.data;
+    ravens.forEach(object => {
+        if (object.randomColors[0] === pc[0] && object.randomColors[1] === pc[1] && object.randomColors[2] === pc[2]) {
+            object.markedForDeletion = true;  // disparition enemy
+            score++;
+        }
+    })
+});
+
+// fin gestion shoot------------------------------------------
+
 
 function animate(timestamp) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    collisionCtx.clearRect(0, 0, canvas.width, canvas.height);
     let deltatime = timestamp - lastTime;
     lastTime = timestamp;
     timeToNextRaven += deltatime;
     if (timeToNextRaven > ravenInterval) {
         ravens.push(new Raven());
         timeToNextRaven = 0;
-        // console.log(ravens);
+        ravens.sort(function (a, b) {
+            return a.width - b.width;
+        });
     };
+    drawScore();
     [...ravens].forEach(object => object.update(deltatime));
     [...ravens].forEach(object => object.draw());
     ravens = ravens.filter(object => !object.markedForDeletion); // vide le tableau ravens
