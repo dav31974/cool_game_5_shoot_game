@@ -38,6 +38,7 @@ class Raven {
         this.flapInterval = Math.random() * 50 + 50;
         this.randomColors = [Math.floor(Math.random() * 255), Math.floor(Math.random() * 255), Math.floor(Math.random() * 255)];
         this.color = 'rgb(' + this.randomColors[0] + ',' + this.randomColors[1] + ',' + this.randomColors[2] + ')';
+        this.hasTrail = Math.random() > 0.5;
     }
     update(deltatime) {
         // condition pour que le cobac rebondisse si il touche le haut ou le bas de la fenetre
@@ -52,6 +53,11 @@ class Raven {
             if (this.frame > this.maxFrame) this.frame = 0;
             else this.frame++;
             this.timeSinceFlap = 0;
+            if (this.hasTrail) {
+                for (let i = 0; i < 5; i++) {
+                    particles.push(new Particles(this.x, this.y, this.width, this.color)); // ajout d'un objet particule dans le tableau particles
+                }
+            }
         }
         if (this.x < 0 - this.width) gameOver = true;  // condition game over
     }
@@ -97,6 +103,37 @@ class Explosion {
 }
 //explosion end ---
 
+// particles ----
+let particles = [];
+class Particles {
+    constructor(x, y, size, color) {
+        this.size = size;
+        this.x = x + this.size / 2 + Math.random() * 50 - 25;
+        this.y = y + this.size / 3;
+        this.radius = Math.random() * this.size / 10;
+        this.maxRadius = Math.random() * 20 + 35;
+        this.markedForDeletion = false;
+        this.speedX = Math.random() * 1 + 0.5;
+        this.color = color;
+    }
+    update() {
+        this.x += this.speedX;
+        this.radius += 0.4;
+        if (this.radius > this.maxRadius - 5) this.markedForDeletion = true;
+    }
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = 1 - this.radius / this.maxRadius; //  particle opacity
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+//particles end ---
+
 // Affichage du score
 function drawScore() {
     ctx.fillStyle = 'black';
@@ -113,7 +150,7 @@ function drawGameOver() {
     ctx.fillStyle = 'white';    // shadow text
     ctx.fillText('GAME OVER, your score is ' + score, canvas.width / 2 + 4, canvas.height / 2 + 4);    // shadow text
 }
-
+// ecouteur evenement click
 window.addEventListener('click', function (e) {
     const detectPixelColor = collisionCtx.getImageData(e.x, e.y, 1, 1);
     const pc = detectPixelColor.data;
@@ -127,7 +164,6 @@ window.addEventListener('click', function (e) {
         }
     })
 });
-
 // fin gestion shoot------------------------------------------
 
 
@@ -145,10 +181,11 @@ function animate(timestamp) {
         });
     };
     drawScore();
-    [...ravens, ...explosions].forEach(object => object.update(deltatime));
-    [...ravens, ...explosions].forEach(object => object.draw());
+    [...particles, ...ravens, ...explosions].forEach(object => object.update(deltatime));
+    [...particles, ...ravens, ...explosions].forEach(object => object.draw());
     ravens = ravens.filter(object => !object.markedForDeletion); // vide le tableau ravens
     explosions = explosions.filter(object => !object.markedForDeletion); // vide le tableau explosions
+    particles = particles.filter(object => !object.markedForDeletion); // vide le tableau des particles
     if (!gameOver) requestAnimationFrame(animate);
     else drawGameOver();
 }
